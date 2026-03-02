@@ -24,7 +24,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Inicia o servidor + sincroniza o banco
-app.listen(3000, '192.168.0.101', async () => {
+app.listen(3000, '172.26.144.1', async () => {
   try {
     await sequelize.sync({ alter: true });
     console.log('✔ Banco sincronizado');

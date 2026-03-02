@@ -4,49 +4,49 @@ exports.cadastrarProduto = async (req, res) => {
   try {
     console.log('Payload recebido:', JSON.stringify(req.body, null, 2));
 
+    // Use os nomes que o frontend envia (depois do ajuste anterior)
     const {
-      nome,                         // ← frontend envia 'nome', não 'descricao'
+      descricao,                    // frontend envia 'descricao' agora
+      quantidade,                   // quantidade = pacotes
+      peso,                         // peso = quantidade_por_unidade
       unidade,
-      quantidade_por_unidade,
-      quantidade_de_pacotes,
-      validade,
-      data_recebimento
+      codBar,
+      dataDeEntrada,
+      dataDeValidade,
+      dataLimiteDeSaida
     } = req.body;
 
-    // Validações básicas (frontend já faz algumas, mas reforçamos)
-    if (!nome || !unidade || !quantidade_por_unidade || !quantidade_de_pacotes || !validade) {
-      return res.status(400).json({ erro: "Campos obrigatórios faltando (nome, unidade, quantidades, validade)" });
+    // Validações
+    if (!descricao || !quantidade || !peso || !unidade) {
+      return res.status(400).json({ erro: "Campos obrigatórios faltando (descricao, quantidade, peso, unidade)" });
     }
 
     const unidadesValidas = ['kg', 'g', 'l', 'ml', 'un', 'cx', 'pct'];
     if (!unidadesValidas.includes(unidade.toLowerCase())) {
-      return res.status(400).json({ erro: "Unidade inválida. Use kg, g, l, ml, un, cx ou pct" });
+      return res.status(400).json({ erro: "Unidade inválida" });
     }
 
-    // Converte números (garante que não venha string ou NaN)
-    const qtdUnidade = parseFloat(quantidade_por_unidade);
-    const qtdPacotes = parseInt(quantidade_de_pacotes);
-
-    if (isNaN(qtdUnidade) || isNaN(qtdPacotes) || qtdUnidade <= 0 || qtdPacotes <= 0) {
-      return res.status(400).json({ erro: "Quantidades devem ser números positivos" });
-    }
-
-    // Cria o produto com os campos que o model espera
+    // Cria o produto
     const produto = await Produto.create({
-      descricao: nome.trim(),  // ← frontend envia 'nome', model espera 'descricao'
-      quantidade: qtdPacotes,  // ← quantidade total = pacotes
-      peso: qtdUnidade,        // ← peso unitário ou total
-      unidade: unidade.toLowerCase(),
-      codBar: '0000000000000', // ← default se não enviar
-      dataDeEntrada: data_recebimento ? new Date(data_recebimento) : new Date(),
-      dataDeValidade: new Date(validade),
-      dataLimiteDeSaida: null,
-      codUsu: 1,               // ← default para teste (admin)
-      codOri: 1,               // ← default para teste
-      codList: 1               // ← default para teste
-    });
+  nome: req.body.nome || req.body.descricao || null,
+  descricao: req.body.descricao || req.body.nome || null,
+  unidade: req.body.unidade || "kg",
+  quantidade_por_unidade: req.body.quantidade_por_unidade || req.body.peso || 0,
+  quantidade_de_pacotes: req.body.quantidade_de_pacotes || req.body.quantidade || 1,
+  validade: req.body.validade || req.body.dataDeValidade || null,
+  data_recebimento: req.body.data_recebimento || req.body.dataDeEntrada || new Date().toISOString().split("T")[0],
+  peso: req.body.peso || req.body.quantidade_por_unidade || 0,
+  quantidade: req.body.quantidade || req.body.quantidade_de_pacotes || 1,
+  codBar: req.body.codBar || '0000000000000',
+  dataDeEntrada: req.body.dataDeEntrada || new Date(),
+  dataDeValidade: req.body.dataDeValidade || req.body.validade || null,
+  dataLimiteDeSaida: req.body.dataLimiteDeSaida || null,
+  codUsu: req.body.codUsu || 1,
+  codOri: req.body.codOri || 1,
+  codList: req.body.codList || 1
+});
 
-    console.log('Produto criado com sucesso:', JSON.stringify(produto.toJSON(), null, 2));
+    console.log('Produto criado:', JSON.stringify(produto.toJSON(), null, 2));
 
     return res.status(201).json(produto);
   } catch (err) {
@@ -81,7 +81,7 @@ exports.cadastrarProduto = async (req, res) => {
 
     if (err.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({
-        error: 'Valor duplicado (ex: código de barras já existe)',
+        error: 'Valor duplicado',
         detalhes: err.errors.map(e => e.message)
       });
     }
@@ -90,70 +90,5 @@ exports.cadastrarProduto = async (req, res) => {
       error: 'Erro interno no servidor',
       mensagem: err.message || 'Detalhes não disponíveis'
     });
-  }
-};
-
-// Mantenha os outros métodos (listarTodos, buscarPorId, atualizar, deletar)
-exports.listarTodos = async (req, res) => {
-  try {
-    const produtos = await Produto.findAll();
-    res.status(200).json({ total: produtos.length, produtos });
-  } catch (error) {
-    console.error('Erro ao listar:', error);
-    res.status(500).json({ erro: "Erro ao listar", detalhes: error.message });
-  }
-};
-
-exports.buscarPorId = async (req, res) => {
-  try {
-    const produto = await Produto.findByPk(req.params.codProd);
-    if (!produto) {
-      return res.status(404).json({ erro: 'Produto não encontrado' });
-    }
-    res.json(produto);
-  } catch (error) {
-    console.error('Erro ao buscar:', error);
-    res.status(500).json({ erro: "Erro ao buscar", detalhes: error.message });
-  }
-};
-
-exports.atualizar = async (req, res) => {
-  try {
-    const produto = await Produto.findByPk(req.params.codProd);
-    if (!produto) {
-      return res.status(404).json({ erro: 'Produto não encontrado' });
-    }
-
-    const updates = req.body;
-    if (updates.unidade) {
-      updates.unidade = updates.unidade.toLowerCase();
-    }
-
-    // Converte datas se enviadas como string
-    if (updates.dataDeEntrada) updates.dataDeEntrada = new Date(updates.dataDeEntrada);
-    if (updates.dataDeValidade) updates.dataDeValidade = new Date(updates.dataDeValidade);
-    if (updates.dataLimiteDeSaida) updates.dataLimiteDeSaida = new Date(updates.dataLimiteDeSaida);
-
-    await produto.update(updates);
-
-    res.json({ mensagem: "Produto atualizado com sucesso", produto });
-  } catch (error) {
-    console.error('Erro ao atualizar:', error);
-    res.status(500).json({ erro: "Erro ao atualizar", detalhes: error.message });
-  }
-};
-
-exports.deletar = async (req, res) => {
-  try {
-    const produto = await Produto.findByPk(req.params.codProd);
-    if (!produto) {
-      return res.status(404).json({ erro: 'Produto não encontrado' });
-    }
-
-    await produto.destroy();
-    res.json({ mensagem: "Produto deletado com sucesso" });
-  } catch (error) {
-    console.error('Erro ao deletar:', error);
-    res.status(500).json({ erro: "Erro ao deletar", detalhes: error.message });
   }
 };
