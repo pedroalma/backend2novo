@@ -1,40 +1,72 @@
-// models/Produto.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const Produto = sequelize.define('Produto', {
-    nome: {
-      type: DataTypes.STRING,
+    codProd: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      field: 'codProd' // força o nome exato da coluna na tabela
+    },
+    descricao: {
+      type: DataTypes.STRING(100),
       allowNull: false,
-      validate: { notEmpty: true }
+      field: 'descricao'
     },
-    unidade: {
-      type: DataTypes.STRING(10),
-      allowNull: false,
-      defaultValue: 'kg'
-    },
-    quantidade_por_unidade: {
-      type: DataTypes.DECIMAL(10, 3),
-      allowNull: false
-    },
-    quantidade_de_pacotes: {
+    quantidade: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 1
+      field: 'quantidade'
     },
-    validade: {
-      type: DataTypes.DATEONLY,      // ou STRING se preferir guardar "MM/AAAA"
-      allowNull: false
-    },
-    data_recebimento: {
-      type: DataTypes.DATEONLY,
+    peso: {
+      type: DataTypes.DECIMAL(10, 3),
       allowNull: false,
-      defaultValue: DataTypes.NOW
+      field: 'peso'
+    },
+    unidade: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      field: 'unidade'
+    },
+    codBar: {
+      type: DataTypes.STRING(13),
+      allowNull: false,
+      field: 'codBar'
+    },
+    dataDeEntrada: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      field: 'dataDeEntrada'
+    },
+    dataDeValidade: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      field: 'dataDeValidade'
+    },
+    dataLimiteDeSaida: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'dataLimiteDeSaida'
+    },
+    codUsu: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'codUsu'
+    },
+    codOri: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'codOri'
+    },
+    codList: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'codList'
     }
   }, {
-    tableName: 'produtos',
-    underscored: true,   // garante snake_case
-    timestamps: true
+    tableName: 'tbprodutos',      // força usar exatamente sua tabela manual
+    underscored: false           // mantém createdAt e updatedAt 
+            // impede que Sequelize altere o nome da tabela
   });
 
   return Produto;

@@ -1,32 +1,17 @@
 const express = require('express');
 const router = express.Router();
 
-// Importe o controller (ajuste o nome do arquivo se necessário)
+// Importa o controller (verifique se o nome/caminho está correto)
 const produtosController = require('../controllers/produtosControlles');
 
-// Importe o model Produto (obrigatório para a rota GET /)
-const { Produto } = require('../models');
+// Rotas
+router.post('/', produtosController.cadastrarProduto);          // cadastro
+router.get('/', produtosController.listarProdutos);             // listagem (obrigatória para o frontend)
+router.put('/:id', produtosController.atualizarProduto);        // atualização
 
-// Rota POST para cadastrar produto (já funciona)
-router.post('/', produtosController.cadastrarProduto);
-
-// Rota GET de teste (para confirmar que o backend está vivo)
-router.get('/teste', (req, res) => {
-  res.json({ mensagem: 'Rota GET teste funcionando! Backend OK' });
-});
-
-// Rota GET para listar TODOS os produtos cadastrados
-router.get('/', async (req, res) => {
-  try {
-    const produtos = await Produto.findAll();
-    if (produtos.length === 0) {
-      return res.json({ mensagem: 'Nenhum produto cadastrado ainda', produtos: [] });
-    }
-    res.json(produtos);
-  } catch (error) {
-    console.error('Erro ao listar produtos:', error);
-    res.status(500).json({ erro: 'Erro ao listar produtos', mensagem: error.message });
-  }
+// Rota de teste simples (opcional, para confirmar que o router está carregado)
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Rotas de produtos ativas' });
 });
 
 module.exports = router;

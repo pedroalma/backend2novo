@@ -6,13 +6,10 @@ const { sequelize } = require('./models');
 // Middlewares obrigatórios para ler JSON no body
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// =============================================
+app.use('/api/produtos', require('./routes/produtosRoutes'));
 // Monta as rotas de produtos
-// Use o caminho correto conforme sua estrutura de pastas
-// =============================================
-const produtosRoutes = require('./routes/produtosRoutes'); // ajuste se necessário: './routes/produtosRoutes'
-app.use('/api/produtos', produtosRoutes);                    // ← ESSA É A LINHA QUE FALTAVA!
+const produtosRoutes = require('./routes/produtosRoutes');
+app.use('/api/produtos', produtosRoutes);
 
 // Rota de saúde / teste (muito útil para debug)
 app.get('/api/health', (req, res) => {
@@ -23,13 +20,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Inicia o servidor + sincroniza o banco
-app.listen(3000, '172.26.144.1', async () => {
+// Inicia o servidor e sincroniza o banco (sem force/alter para evitar conflitos)
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', async () => {
   try {
-    await sequelize.sync({ alter: true });
-    console.log('✔ Banco sincronizado');
-    console.log('✔ Servidor rodando em http://192.168.0.101:3000 (acessível na rede local)');
+    await sequelize.authenticate(); // testa a conexão
+    console.log('Conexão com MySQL realizada com sucesso!');
+
+    // Sync simples (só cria se não existir, não altera nem força)
+    await sequelize.sync({ force: false, alter: false });
+    console.log('✔ Banco sincronizado (sem alterações forçadas)');
+
+    console.log(`✔ Servidor rodando em http://localhost:${PORT} (e também em http://192.168.0.101:${PORT})`);
   } catch (error) {
-    console.error('Erro ao sincronizar banco:', error);
+    console.error('Erro ao iniciar o servidor ou sincronizar banco:', error);
+    process.exit(1); // para o servidor se der erro grave
   }
 });
